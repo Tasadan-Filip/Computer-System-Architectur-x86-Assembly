@@ -1,0 +1,23 @@
+     1                                  bits 32
+     2                                  
+     3                                  global add_digit_to_binary
+     4                                  
+     5                                  segment code use32 class=code
+     6                                     add_digit_to_binary:
+     7                                          
+     8 00000000 8B442404                        mov eax, [esp + 4] ; the current char 
+     9 00000004 8B542408                        mov edx, [esp + 8] ; the address of the binary number
+    10                                          
+    11 00000008 3C62                            cmp al, 'b'
+    12 0000000A 7409                            je reinitialize_number
+    13 0000000C 2C30                                sub al, '0'
+    14 0000000E C02202                              shl byte [edx], 2
+    15 00000011 00C2                                add dl, al
+    16                                          
+    17 00000013 EB08                            jmp fin
+    18                                          reinitialize_number:
+    19 00000015 C60200                              mov byte [edx], 0
+    20 00000018 B8FFFFFFFF                          mov eax, -1 
+    21                                          
+    22                                          fin:
+    23 0000001D C3                                  ret

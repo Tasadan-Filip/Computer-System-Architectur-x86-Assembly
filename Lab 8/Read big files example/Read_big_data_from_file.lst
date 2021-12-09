@@ -1,0 +1,72 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit, fopen, fclose, fprintf, fread, printf              ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    
+     9                                  import fopen msvcrt.dll 
+    10                                  import fclose msvcrt.dll 
+    11                                  import fprintf msvcrt.dll 
+    12                                  import fread msvcrt.dll
+    13                                  import printf msvcrt.dll
+    14                                  ; A text file is given. Read the content of the file, count the number of vowels and display the result on the screen. The name of text file is defined in the data segment.
+    15                                  segment data use32 class=data
+    16                                      
+    17 00000000 726561645F6269672E-         file_name db "read_big.txt", 0
+    17 00000009 74787400           
+    18 0000000D 7200                        access_mode db "r", 0
+    19                                      len equ 100
+    20 0000000F FFFFFFFF                    file_descriptor dd -1
+    21 00000013 <res 00000064>              buffer resb len
+    22 00000077 00                          terminator db 0
+    23 00000078 00000000                    nr_car_citite dd 0
+    24                                  segment code use32 class=code
+    25                                      start:
+    26                                          ;fopen(file_name, access_mode)
+    27 00000000 68[0D000000]                    push dword access_mode
+    28 00000005 68[00000000]                    push dword file_name
+    29 0000000A FF15[00000000]                  call [fopen]
+    30 00000010 83C408                          add esp, 4 * 2
+    31                                          
+    32 00000013 A3[0F000000]                    mov [file_descriptor], eax ; store the file descriptor returend by fopen
+    33                                          
+    34                                          ; check if fopen() has successfuly created the file (EAX != 0)
+    35                                          
+    36 00000018 83F800                          cmp eax, 0
+    37 0000001B 7441                            je final
+    38                                          
+    39                                          loop_to_read_all:
+    40                                            ; citim o parte (100 caractere) din textul in fisierul deschis folosind functia fread
+    41                                            ; eax = fread(buffer, 1, len, descriptor_fis)
+    42 0000001D FF35[0F000000]                      push dword [file_descriptor]
+    43 00000023 6A64                                push len
+    44 00000025 6A01                                push 1
+    45 00000027 68[13000000]                        push dword buffer
+    46 0000002C FF15[00000000]                      call [fread]
+    47 00000032 83C410                              add esp, 4 * 4
+    48                                              
+    49                                              
+    50                                              ;eax = numar de caractere/ bytes citite
+    51 00000035 83F800                              cmp eax, 0
+    52 00000038 7415                                je close_file
+    53                                              
+    54 0000003A A3[78000000]                        mov dword [nr_car_citite], eax
+    55                                              
+    56 0000003F 68[13000000]                        push dword buffer
+    57 00000044 FF15[00000000]                      call [printf]
+    58 0000004A 83C404                              add esp, 4 * 1
+    59                                              
+    60                                              
+    61 0000004D EBCE                                jmp loop_to_read_all
+    62                                          close_file:
+    63                                              ;fclose(file_descriptor)
+    64 0000004F FF35[0F000000]                      push dword [file_descriptor]
+    65 00000055 FF15[00000000]                      call [fclose]
+    66 0000005B 83C404                              add esp, 4 * 1
+    67                                          
+    68                                          
+    69                                          final:
+    70 0000005E 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    71 00000060 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

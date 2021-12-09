@@ -1,0 +1,57 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    
+     9                                  
+    10                                  
+    11                                  ; Two byte strings A and B are given. Obtain the string R that contains only the even negative elements of the two strings
+    12                                  segment data use32 class=data
+    13 00000000 020103FDFC02FA              a db 2, 1, 3, -3, -4, 2, -6
+    14                                      len_a equ $ - a
+    15 00000007 0405FB07FAFE01              b db 4, 5, -5, 7, -6, -2, 1
+    16                                      len_b equ $ - b
+    17 0000000E <res 0000000E>              r resb len_a + len_b
+    18                                      
+    19                                      
+    20                                  segment code use32 class=code
+    21                                      start:
+    22 00000000 FC                              cld
+    23 00000001 BF[0E000000]                    mov edi, r
+    24                                          
+    25 00000006 BE[00000000]                    mov esi, a
+    26 0000000B B907000000                      mov ecx, len_a
+    27                                          parse_a:
+    28 00000010 AC                                  lodsb
+    29                                              
+    30 00000011 3C00                                cmp al, 0
+    31 00000013 7D05                                jge last_command_of_parse_a
+    32                                              
+    33 00000015 A801                                test al, 1
+    34 00000017 7501                                jnz last_command_of_parse_a
+    35                                              
+    36 00000019 AA                                  stosb
+    37                                              
+    38                                              last_command_of_parse_a:
+    39 0000001A E2F4                                    loop parse_a
+    40                                          
+    41 0000001C BE[07000000]                    mov esi, b
+    42 00000021 B907000000                      mov ecx, len_b
+    43                                          parse_b:
+    44 00000026 AC                                  lodsb
+    45                                              
+    46 00000027 3C00                                cmp al, 0
+    47 00000029 7D05                                jge last_command_of_parse_b
+    48                                              
+    49 0000002B A801                                test al, 1
+    50 0000002D 7501                                jnz last_command_of_parse_b
+    51                                              
+    52 0000002F AA                                  stosb
+    53                                              
+    54                                              last_command_of_parse_b:
+    55 00000030 E2F4                                    loop parse_b
+    56 00000032 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    57 00000034 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

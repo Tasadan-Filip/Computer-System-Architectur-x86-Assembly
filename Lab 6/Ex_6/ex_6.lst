@@ -1,0 +1,62 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    
+     9                                  
+    10                                  ;A word string s is given. Build the byte string d such that each element d[i] contains:
+    11                                  ;- the count of zeros in the word s[i], if s[i] is a negative number
+    12                                  ;- the count of ones in the word s[i], if s[i] is a positive number
+    13                                  segment data use32 class=data
+    14 00000000 EAFF9100D0FF7F00            s dw -22, 145, -48, 127
+    15                                      len_s equ $ - s
+    16 00000008 FF                          separator db 0xFF
+    17 00000009 <res 00000004>              d resb len_s / 2
+    18                                      
+    19                                  segment code use32 class=code
+    20                                      start:
+    21 00000000 BE[00000000]                    mov esi, s
+    22 00000005 BF[09000000]                    mov edi, d
+    23                                          
+    24 0000000A FC                              cld
+    25 0000000B B904000000                      mov ecx, len_s / 2
+    26                                          
+    27                                          parse_s_to_obtain_d:
+    28 00000010 66AD                                lodsw ; move the word from DS:ESI into AX
+    29 00000012 B300                                mov bl, 0
+    30 00000014 6683F800                            cmp ax, 0
+    31 00000018 7C10                                jl negative_number
+    32                                              
+    33                                              
+    34                                              while_ax_bigger_than_0_positive:
+    35 0000001A 6683F800                                cmp ax, 0
+    36 0000001E 741A                                    je fin_of_parsing
+    37 00000020 F8                                      clc
+    38 00000021 66D1E8                                  shr ax, 1
+    39 00000024 7302                                    jnc last_bit_not_1
+    40 00000026 FEC3                                        inc bl
+    41                                                  last_bit_not_1:
+    42 00000028 EBF0                                        jmp while_ax_bigger_than_0_positive
+    43                                                 
+    44                                              
+    45                                              negative_number:
+    46                                                  while_ax_bigger_than_0_negative:
+    47 0000002A 6683F800                                    cmp ax, 0
+    48 0000002E 740A                                        je fin_of_parsing
+    49 00000030 F8                                          clc
+    50 00000031 66D1E8                                      shr ax, 1
+    51 00000034 7202                                        jc last_bit_not_0
+    52 00000036 FEC3                                        inc bl
+    53                                                      last_bit_not_0:
+    54 00000038 EBF0                                            jmp while_ax_bigger_than_0_negative
+    55                                              
+    56                                              fin_of_parsing:
+    57 0000003A 88D8                                mov al, bl
+    58 0000003C AA                                  stosb ; mov the byte from AL into ES:EDI
+    59 0000003D E2D1                                loop parse_s_to_obtain_d
+    60                                          
+    61 0000003F 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    62 00000041 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

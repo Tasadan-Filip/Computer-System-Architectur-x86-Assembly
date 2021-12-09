@@ -1,0 +1,87 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    
+     9                                  
+    10                                  ; A list of doublewords is given. Obtain the list made out of the low bytes of the high words of each doubleword from the given list with the property that these bytes are palindromes in base 10.
+    11                                  segment data use32 class=data
+    12 00000000 7856CA124D3C2C1A76-         s dd 12CA5678h, 1A2C3C4Dh, 98FCDC76h
+    12 00000009 DCFC98             
+    13                                      len_s equ $ - s 
+    14 0000000C FF                          separator db 0xFF
+    15 0000000D <res 00000003>              d resb len_s / 4
+    16 00000010 00000000                    dword_aux_val dd 0
+    17 00000014 00                          aux_byte_value db 0
+    18                                      
+    19                                  segment code use32 class=code
+    20                                      start:
+    21 00000000 BE[00000000]                    mov esi, s
+    22 00000005 BF[0D000000]                    mov edi, d
+    23                                          
+    24 0000000A FC                              cld
+    25 0000000B B903000000                      mov ecx, len_s / 4
+    26                                          
+    27                                          parse_s_to_obtain_d:
+    28 00000010 AD                                 lodsd ; move the dword from DS:ESI into EAX 
+    29 00000011 A3[10000000]                       mov dword [dword_aux_val], eax
+    30                                             
+    31 00000016 A0[12000000]                       mov al, [dword_aux_val + 2]
+    32                                             
+    33 0000001B A2[14000000]                       mov byte [aux_byte_value], al
+    34                                             
+    35                                             ; check if the number is palindrome or not
+    36 00000020 3C0A                               cmp al, 10
+    37                                             
+    38 00000022 7F03                               jg bigger_than_10
+    39                                             
+    40                                             ; the number has one digit so it is palindrome
+    41 00000024 AA                                 stosb ; move the byte from AL into ES:EDI
+    42 00000025 EB38                               jmp fin_of_parsing
+    43                                             
+    44                                             bigger_than_10:
+    45 00000027 3C64                               cmp al, 100
+    46 00000029 7F14                               jg bigger_than_100
+    47 0000002B 660FB6C0                           movzx ax, al
+    48 0000002F B30A                               mov bl, 10
+    49                                             
+    50 00000031 F6F3                               div bl
+    51                                             
+    52 00000033 38E0                               cmp al, ah
+    53 00000035 7528                               jne fin_of_parsing
+    54                                             
+    55 00000037 A0[14000000]                       mov al, [aux_byte_value]
+    56 0000003C AA                                 stosb ; move the byte from AL into ES:EDI
+    57 0000003D EB20                               jmp fin_of_parsing
+    58                                             
+    59                                             bigger_than_100:
+    60 0000003F 660FB6C0                                movzx ax, al
+    61                                                  
+    62 00000043 B30A                                    mov bl, 10
+    63                                                  
+    64 00000045 F6F3                                    div bl
+    65                                                  
+    66 00000047 88E2                                    mov dl, ah ; the last digit will be in dl (the remainder of the division)
+    67                                                  
+    68 00000049 660FB605[14000000]                      movzx ax, byte [aux_byte_value]
+    69                                                  
+    70 00000051 B364                                    mov bl, 100
+    71                                                  
+    72 00000053 F6F3                                    div bl
+    73                                                  
+    74 00000055 38D0                                    cmp al, dl
+    75 00000057 7506                                    jne fin_of_parsing
+    76                                                  
+    77 00000059 A0[14000000]                            mov al, [aux_byte_value]
+    78 0000005E AA                                      stosb ; move the byte from AL into ES:ESI
+    79                                                  
+    80                                                  
+    81                                              fin_of_parsing:
+    82 0000005F E2AF                                    loop parse_s_to_obtain_d
+    83                                                  
+    84                                              
+    85 00000061 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    86 00000063 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

@@ -1,0 +1,95 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; A text file is given. Read the content of the file, count the number of vowels and display the result on the screen. The name of text file is defined in the data segment.
+     7                                  extern exit, fopen, fclose, printf, fread               
+     8                                  
+     9                                  import exit msvcrt.dll    
+    10                                  import fopen msvcrt.dll
+    11                                  import fclose msvcrt.dll
+    12                                  import printf msvcrt.dll
+    13                                  import fread msvcrt.dll
+    14                                  segment data use32 class=data
+    15 00000000 746578745F65786572-         file_name db "text_exercise1.txt", 0
+    15 00000009 63697365312E747874-
+    15 00000012 00                 
+    16 00000013 00000000                    file_descriptor dd 0
+    17 00000017 7200                        open_format db "r", 0
+    18 00000019 256300                      format_print db "%c", 0
+    19                                      len equ 100
+    20 0000001C <res 00000064>              buffer resb len
+    21                                      
+    22                                      
+    23                                  segment code use32 class=code
+    24                                      start:
+    25                                          ; open the file
+    26 00000000 68[17000000]                    push  dword open_format
+    27 00000005 68[00000000]                    push dword file_name
+    28 0000000A FF15[00000000]                  call [fopen]
+    29 00000010 83C408                          add esp, 4 * 2
+    30                                          
+    31 00000013 A3[13000000]                    mov [file_descriptor], eax
+    32                                          
+    33                                          ;check if the file was opened correctly
+    34 00000018 83F800                          cmp eax, 0
+    35 0000001B 7464                            je fin
+    36                                          
+    37                                          loop_to_read_all_chars:
+    38 0000001D FF35[13000000]                      push dword [file_descriptor]
+    39 00000023 6A64                                push len
+    40 00000025 6A01                                push 1
+    41 00000027 68[1C000000]                        push buffer
+    42 0000002C FF15[00000000]                      call [fread]
+    43 00000032 83C410                              add esp, 4 * 4
+    44                                              
+    45                                              ;If all the characters were red
+    46 00000035 83F800                              cmp eax, 0
+    47 00000038 7438                                je close_file
+    48                                              
+    49 0000003A 89C1                                mov ecx, eax ;in ecx I will have the number of characters read correctly
+    50 0000003C BE[1C000000]                        mov esi, buffer
+    51                                              
+    52                                              loop_in_buffer_to_print_vowels:
+    53 00000041 51                                      push ecx
+    54                                                  
+    55 00000042 B800000000                              mov eax, 0
+    56 00000047 AC                                      lodsb ; move the byte from DS:ESI into AL
+    57                                                  
+    58 00000048 3C61                                    cmp al, 'a'
+    59 0000004A 7412                                    je is_vowel
+    60                                                  
+    61 0000004C 3C65                                    cmp al, 'e'
+    62 0000004E 740E                                    je is_vowel
+    63                                                  
+    64 00000050 3C69                                    cmp al, 'i'
+    65 00000052 740A                                    je is_vowel
+    66                                                  
+    67 00000054 3C6F                                    cmp al, 'o'
+    68 00000056 7406                                    je is_vowel
+    69                                                  
+    70 00000058 3C75                                    cmp al, 'u'
+    71 0000005A 7402                                    je is_vowel
+    72                                                  
+    73 0000005C EB0F                                    jmp last_command
+    74                                                  
+    75                                                  is_vowel:
+    76 0000005E 50                                          push eax
+    77 0000005F 68[19000000]                                push dword format_print
+    78 00000064 FF15[00000000]                              call [printf]
+    79 0000006A 83C408                                      add esp, 4 * 2
+    80                                                  
+    81                                                  last_command:
+    82 0000006D 59                                      pop ecx
+    83 0000006E E2D1                                    loop loop_in_buffer_to_print_vowels
+    84                                              
+    85 00000070 EBAB                                jmp loop_to_read_all_chars
+    86                                                  
+    87                                          close_file:
+    88 00000072 FF35[13000000]                      push dword [file_descriptor]
+    89 00000078 FF15[00000000]                      call [fclose]
+    90 0000007E 83C404                              add esp, 4 * 1
+    91                                          fin:
+    92 00000081 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    93 00000083 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

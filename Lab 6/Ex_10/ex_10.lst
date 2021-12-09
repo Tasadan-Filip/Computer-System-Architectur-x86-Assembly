@@ -1,0 +1,45 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; Given an array A of words, build two arrays of bytes:  
+    12                                  ; - array B1 contains as elements the higher part of the words from A
+    13                                  ; - array B2 contains as elements the lower part of the words from A
+    14                                  segment data use32 class=data
+    15 00000000 3412563478569078            a dw 1234h, 3456h, 5678h, 7890h
+    16                                      len_a equ $ - a
+    17 00000008 <res 00000004>              b1 resb len_a / 2
+    18 0000000C <res 00000004>              b2 resb len_a / 2
+    19                                      
+    20                                      
+    21                                  segment code use32 class=code
+    22                                      start:
+    23 00000000 BE[00000000]                    mov esi, a
+    24                                          
+    25 00000005 B904000000                      mov ecx, len_a / 2
+    26 0000000A BB00000000                      mov ebx, 0
+    27                                          
+    28 0000000F FC                              cld
+    29                                          
+    30                                          parse_a_to_obtain_b1_and_b2:
+    31 00000010 66AD                                lodsw ; move the word from DS:ESI into AX
+    32                                              
+    33 00000012 88A3[08000000]                      mov byte [b1 + ebx], ah
+    34 00000018 8883[0C000000]                      mov byte [b2 + ebx], al
+    35                                              
+    36 0000001E 43                                  inc ebx
+    37                                              
+    38 0000001F E2EF                                loop parse_a_to_obtain_b1_and_b2
+    39                                          
+    40                                          
+    41                                          
+    42                                          
+    43                                          
+    44 00000021 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    45 00000023 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

@@ -1,0 +1,54 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    
+     9                                  
+    10                                  ; Two character strings S1 and S2 are given. Obtain the string D by concatenating the elements found on odd positions in S2 and the elements found on even positions in S1.
+    11                                  segment data use32 class=data
+    12 00000000 616263646566                s1 db 'a', 'b', 'c', 'd', 'e', 'f'
+    13                                      len_s1 equ $ - s1
+    14 00000006 0000                        s1_terminator db 0, 0
+    15 00000008 3132333435                  s2 db '1', '2', '3', '4', '5'
+    16                                      len_s2 equ $ - s2
+    17 0000000D 0000                        s2_terminator db 0, 0
+    18 0000000F 00<rept>                    d times (len_s1 + len_s2) / 2 + 1 db 0
+    19                                      
+    20                                  segment code use32 class=code
+    21                                      start:
+    22 00000000 FC                              cld
+    23 00000001 BF[0F000000]                    mov edi, d
+    24 00000006 BE[08000000]                    mov esi, s2
+    25                                          parse_s2_on_odd_positions:
+    26 0000000B AC                                  lodsb 
+    27                                              
+    28 0000000C 3C00                                cmp al, 0
+    29 0000000E 7404                                je fin_of_parse_s2
+    30                                              
+    31 00000010 AA                                  stosb
+    32 00000011 46                                  inc esi
+    33 00000012 EBF7                                jmp parse_s2_on_odd_positions
+    34                                              
+    35                                          fin_of_parse_s2:
+    36                                          
+    37 00000014 BE[01000000]                    mov esi, s1 + 1
+    38                                          parse_s1_on_odd_positions:
+    39 00000019 AC                                  lodsb 
+    40                                              
+    41 0000001A 3C00                                cmp al, 0
+    42 0000001C 7404                                je fin_of_parse_s1
+    43                                              
+    44 0000001E AA                                  stosb
+    45 0000001F 46                                  inc esi
+    46 00000020 EBF7                                jmp parse_s1_on_odd_positions
+    47                                              
+    48                                          fin_of_parse_s1:
+    49                                          
+    50                                          
+    51                                          
+    52                                          
+    53 00000022 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    54 00000024 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

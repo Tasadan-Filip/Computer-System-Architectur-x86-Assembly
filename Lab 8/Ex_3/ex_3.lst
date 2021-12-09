@@ -1,0 +1,113 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit, fopen, fread, fclose, printf              
+     8                                  import exit msvcrt.dll    
+     9                                  import fopen msvcrt.dll
+    10                                  import fread msvcrt.dll
+    11                                  import fclose msvcrt.dll
+    12                                  import printf msvcrt.dll
+    13                                  
+    14                                  ; A text file is given. Read the content of the file, count the number of even digits and display the result on the screen. The name of text file is defined in the data segment.
+    15                                  segment data use32 class=data
+    16 00000000 7200                         open_format db "r", 0
+    17 00000002 746578745F65786572-          file_name db "text_exercise3.txt"
+    17 0000000B 63697365332E747874 
+    18 00000014 <res 00000004>               file_descriptor resd 1
+    19                                       len equ 100
+    20 00000018 <res 00000064>               buffer resb len
+    21 0000007C 00                           terminator db 0
+    22 0000007D 00000000                     number_of_even_digits dd 0
+    23 00000081 546865206E756D6265-          print_format db "The number of even digits in the text file is: %u", 0
+    23 0000008A 72206F66206576656E-
+    23 00000093 206469676974732069-
+    23 0000009C 6E2074686520746578-
+    23 000000A5 742066696C65206973-
+    23 000000AE 3A20257500         
+    24                                       
+    25                                      
+    26                                  segment code use32 class=code
+    27                                      start:
+    28                                          ; Step 1: open the file
+    29 00000000 68[00000000]                    push dword open_format
+    30 00000005 68[02000000]                    push dword file_name
+    31 0000000A FF15[00000000]                  call [fopen]
+    32 00000010 83C408                          add esp, 4 * 2
+    33                                          
+    34 00000013 A3[14000000]                    mov [file_descriptor], eax
+    35                                          
+    36 00000018 83F800                          cmp eax, 0 ; check if the file was opened correclty (eax != 0)
+    37 0000001B 7472                            je fin
+    38                                          
+    39                                          ; Step 2: read all characters from the file
+    40                                          loop_to_read_all:
+    41 0000001D FF35[14000000]                      push dword [file_descriptor]
+    42 00000023 6A64                                push dword len
+    43 00000025 6A01                                push 1
+    44 00000027 68[18000000]                        push buffer
+    45 0000002C FF15[00000000]                      call [fread]
+    46 00000032 83C410                              add esp, 4 * 4
+    47                                              
+    48 00000035 83F800                              cmp eax, 0
+    49 00000038 7432                                je close_file
+    50                                              
+    51 0000003A 89C1                                mov ecx, eax
+    52 0000003C BE[18000000]                        mov esi, buffer
+    53                                              
+    54                                              parse_the_buffer_to_search_for_even_numbers:
+    55 00000041 51                                      push ecx
+    56                                                  
+    57 00000042 AC                                      lodsb ; move the byte from DS:ESI into AL (and increments esi with 1)
+    58                                                  
+    59 00000043 3C00                                    cmp al, 0
+    60 00000045 7423                                    je fin_of_parsing_buffer
+    61                                                  
+    62 00000047 3C30                                    cmp al, '0'
+    63 00000049 721C                                    jb last_command_of_this_loop
+    64                                                  
+    65 0000004B 3C39                                    cmp al, '9' 
+    66 0000004D 7718                                    ja last_command_of_this_loop
+    67                                                  
+    68                                                  
+    69 0000004F 2C30                                    sub al, '0'
+    70 00000051 660FB6C0                                movzx ax, al
+    71                                                  
+    72 00000055 B302                                    mov bl, 2
+    73                                                  
+    74 00000057 F6F3                                    div bl ; the remainder will be in ah 
+    75                                                  
+    76 00000059 80FC00                                  cmp ah, 0
+    77 0000005C 7402                                    je is_even
+    78                                                  
+    79 0000005E EB07                                    jmp last_command_of_this_loop
+    80                                                  is_even:
+    81 00000060 8305[7D000000]01                            add dword [number_of_even_digits], 1
+    82                                                      
+    83                                                  last_command_of_this_loop:
+    84 00000067 59                                          pop ecx
+    85 00000068 E2D7                                        loop parse_the_buffer_to_search_for_even_numbers
+    86                                              
+    87                                  
+    88                                              fin_of_parsing_buffer:
+    89 0000006A EBB1                                    jmp loop_to_read_all
+    90                                          
+    91                                          
+    92                                          
+    93                                          
+    94                                          ; Step 3: close the file
+    95                                          close_file:
+    96 0000006C FF35[7D000000]                      push dword [number_of_even_digits]
+    97 00000072 68[81000000]                        push dword print_format
+    98 00000077 FF15[00000000]                      call [printf]
+    99 0000007D 83C408                              add esp, 4 * 2
+   100                                              
+   101 00000080 FF35[14000000]                      push dword [file_descriptor]
+   102 00000086 FF15[00000000]                      call [fclose]
+   103 0000008C 83C404                              add esp, 4 * 1
+   104                                          
+   105                                          fin:
+   106 0000008F 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+   107 00000091 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

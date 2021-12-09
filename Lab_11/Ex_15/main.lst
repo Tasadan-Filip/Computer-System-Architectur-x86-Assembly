@@ -1,0 +1,48 @@
+     1                                  bits 32 
+     2                                  
+     3                                  
+     4                                  global start        
+     5                                  
+     6                                  
+     7                                  extern exit, add_digit_to_binary               
+     8                                  import exit msvcrt.dll    
+     9                                  segment data use32 class=data
+    10 00000000 313031303031313162-         sir db '10100111b', '01100011b', '110b', '101011b'
+    10 00000009 303131303030313162-
+    10 00000012 313130623130313031-
+    10 0000001B 3162               
+    11                                      len_sir equ $ - sir
+    12 0000001D 00<rept>                    sir_final times len_sir db 0
+    13 0000003A <res 00000009>              current_binary_string resb 9
+    14 00000043 00                          binary_number db 0
+    15 00000044 00                          current_char db 0
+    16                                  segment code use32 class=code
+    17                                      start:
+    18                                      
+    19 00000000 B900000000                      mov ecx, 0
+    20 00000005 BB00000000                      mov ebx, 0
+    21                                          parse_sir_loop:
+    22 0000000A 83F91D                              cmp ecx, len_sir
+    23 0000000D 7429                                je fin_of_parse
+    24                                              
+    25 0000000F 0FB681[00000000]                    movzx eax, byte [sir + ecx]
+    26                                              
+    27 00000016 68[43000000]                        push binary_number
+    28 0000001B 50                                  push eax
+    29 0000001C E8(00000000)                        call add_digit_to_binary
+    30 00000021 83C408                              add esp, 4 * 2
+    31                                              
+    32 00000024 83F8FF                              cmp eax, -1
+    33 00000027 750C                                jne final_command
+    34                                                  
+    35 00000029 A0[43000000]                            mov al, [binary_number]
+    36 0000002E 8883[1D000000]                          mov byte [sir_final + ebx], al
+    37 00000034 43                                      inc ebx
+    38                                              
+    39                                              final_command:
+    40 00000035 41                                      inc ecx
+    41 00000036 EBD2                                    jmp parse_sir_loop
+    42                                                  
+    43                                          fin_of_parse:
+    44 00000038 6A00                            push    dword 0      
+    45 0000003A FF15[00000000]                  call    [exit]       

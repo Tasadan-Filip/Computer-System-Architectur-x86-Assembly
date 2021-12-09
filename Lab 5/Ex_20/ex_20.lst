@@ -1,0 +1,55 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; Two byte strings A and B are given. Obtain the string R by concatenating the elements of B in reverse order and the even elements of A
+    12                                  segment data use32 class=data
+    13 00000000 02010303040206              a db 2, 1, 3, 3, 4, 2, 6
+    14                                      len_a equ $ - a
+    15 00000007 040507060201                b db 4, 5, 7, 6, 2, 1
+    16                                      len_b equ $ - b
+    17 0000000D <res 0000000D>              r resb len_a + len_b
+    18                                  segment code use32 class=code
+    19                                      start:
+    20 00000000 BF[0D000000]                    mov edi, r
+    21                                      
+    22 00000005 BE[0C000000]                    mov esi, b + len_b - 1
+    23 0000000A B906000000                      mov ecx, len_b
+    24 0000000F E31B                            jecxz fin
+    25                                          
+    26                                          parse_b_in_reverse:
+    27                                              
+    28 00000011 FD                                  std
+    29 00000012 AC                                  lodsb
+    30                                              
+    31 00000013 FC                                  cld
+    32 00000014 AA                                  stosb
+    33                                              
+    34 00000015 E2FA                                loop parse_b_in_reverse
+    35                                          
+    36 00000017 BE[00000000]                    mov esi, a
+    37 0000001C B907000000                      mov ecx, len_a
+    38                                          
+    39 00000021 FC                              cld
+    40 00000022 E308                            jecxz fin
+    41                                          
+    42                                          parse_a:
+    43 00000024 AC                                  lodsb
+    44                                              
+    45 00000025 A801                                test al, 1
+    46 00000027 7501                                jnz last_command_of_parse_a
+    47                                              
+    48 00000029 AA                                  stosb
+    49                                              
+    50                                              last_command_of_parse_a:
+    51 0000002A E2F8                                    loop parse_a
+    52                                          
+    53                                          fin:
+    54 0000002C 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    55 0000002E FF15[00000000]                  call    [exit]       ; call exit to terminate the program

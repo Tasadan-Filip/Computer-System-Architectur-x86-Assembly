@@ -1,0 +1,47 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    
+     9                                  
+    10                                  ; A list of doublewords is given. Obtain the list made out of the low bytes of the high words of each doubleword from the given list with the property that these bytes are palindromes in base 10.
+    11                                  segment data use32 class=data
+    12 00000000 785634124D3C2C1A76-         s dd 12345678h, 1A2C3C4Dh, 98FCDD76h, 12783A2Bh
+    12 00000009 DDFC982B3A7812     
+    13                                      len_s equ $ - s
+    14 00000010 FFFFFFFF                    d dd -1
+    15 00000014 00000000                    aux_dword dd 0 
+    16                                      
+    17                                  segment code use32 class=code
+    18                                      start:
+    19 00000000 BE[00000000]                    mov esi, s
+    20 00000005 BF[10000000]                    mov edi, d
+    21 0000000A 83C703                          add edi, 3
+    22                                          
+    23 0000000D B904000000                      mov ecx, len_s / 4
+    24                                          
+    25                                          parse_s_to_obtain_d:
+    26 00000012 FC                                  cld
+    27 00000013 AD                                  lodsd ; move the dword from DS:ESI into EAX
+    28                                              
+    29 00000014 A3[14000000]                        mov [aux_dword], eax
+    30                                              
+    31 00000019 A0[15000000]                        mov al, [aux_dword + 1]
+    32 0000001E 88C3                                mov bl, al
+    33                                              
+    34 00000020 F8                                  clc
+    35                                              
+    36 00000021 D0EB                                shr bl, 1
+    37 00000023 7202                                jc not_even
+    38 00000025 FD                                      std
+    39 00000026 AA                                      stosb ; move the byte from AL into ES:EDI
+    40                                                  
+    41                                              not_even:
+    42 00000027 E2E9                                    loop parse_s_to_obtain_d
+    43                                                  
+    44                                          
+    45 00000029 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    46 0000002B FF15[00000000]                  call    [exit]       ; call exit to terminate the program
